@@ -114,7 +114,7 @@ static void draw_bottom(struct zmk_widget_status *widget, const struct status_st
     init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_unscii_8, LV_TEXT_ALIGN_CENTER);
 
     // Draw the caption normally into the narrow scratch canvas (never shown on screen)
-    lv_canvas_draw_rect(scratch, 0, 0, LAYER_TEXT_SPACE, CANVAS_SIZE, &rect_black_dsc);
+    lv_canvas_draw_rect(scratch, 0, 0, LAYER_TEXT_SPACE, LAYER_BAND_WIDTH, &rect_black_dsc);
 
     // Short form so it fits within LAYER_TEXT_SPACE without clipping
     char text[6] = {};
@@ -123,18 +123,18 @@ static void draw_bottom(struct zmk_widget_status *widget, const struct status_st
     } else {
         snprintf(text, sizeof(text), "%s", state->layer_label);
     }
-    lv_canvas_draw_text(scratch, 0, 30, LAYER_TEXT_SPACE, &label_dsc, text);
+    lv_canvas_draw_text(scratch, 0, LAYER_BAND_WIDTH / 2 - 4, LAYER_TEXT_SPACE, &label_dsc, text);
 
     // Rotate the scratch content into the full-width, short destination canvas
     lv_img_dsc_t img;
     img.data = (void *)widget->layer_scratch;
     img.header.cf = LV_IMG_CF_TRUE_COLOR;
     img.header.w = LAYER_TEXT_SPACE;
-    img.header.h = CANVAS_SIZE;
+    img.header.h = LAYER_BAND_WIDTH;
 
     lv_canvas_fill_bg(canvas, LVGL_BACKGROUND, LV_OPA_COVER);
     lv_canvas_transform(canvas, &img, 900, LV_IMG_ZOOM_NONE, -1, 0, LAYER_TEXT_SPACE / 2,
-                        CANVAS_SIZE / 2, true);
+                        LAYER_BAND_WIDTH / 2, true);
 }
 
 static void set_battery_status(struct zmk_widget_status *widget,
@@ -241,13 +241,13 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     lv_obj_align(art, LV_ALIGN_TOP_LEFT, 0, 0);
 
     lv_obj_t *layer_scratch = lv_canvas_create(widget->obj);
-    lv_canvas_set_buffer(layer_scratch, widget->layer_scratch, LAYER_TEXT_SPACE, CANVAS_SIZE,
+    lv_canvas_set_buffer(layer_scratch, widget->layer_scratch, LAYER_TEXT_SPACE, LAYER_BAND_WIDTH,
                          LV_IMG_CF_TRUE_COLOR);
     lv_obj_add_flag(layer_scratch, LV_OBJ_FLAG_HIDDEN);
 
     lv_obj_t *bottom = lv_canvas_create(widget->obj);
     lv_obj_align(bottom, LV_ALIGN_TOP_LEFT, 0, 0);
-    lv_canvas_set_buffer(bottom, widget->layer_cbuf, CANVAS_SIZE, LAYER_TEXT_SPACE,
+    lv_canvas_set_buffer(bottom, widget->layer_cbuf, LAYER_BAND_WIDTH, LAYER_TEXT_SPACE,
                          LV_IMG_CF_TRUE_COLOR);
 
     sys_slist_append(&widgets, &widget->node);

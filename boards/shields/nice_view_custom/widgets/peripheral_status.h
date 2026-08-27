@@ -12,13 +12,14 @@
 #include "util.h"
 
 #define LAYER_TEXT_SPACE 24
+#define LAYER_BAND_WIDTH 66
 
 struct zmk_widget_status {
     sys_snode_t node;
     lv_obj_t *obj;
     lv_color_t cbuf[CANVAS_SIZE * CANVAS_SIZE];
-    lv_color_t layer_scratch[LAYER_TEXT_SPACE * CANVAS_SIZE];
-    lv_color_t layer_cbuf[CANVAS_SIZE * LAYER_TEXT_SPACE];
+    lv_color_t layer_scratch[LAYER_TEXT_SPACE * LAYER_BAND_WIDTH];
+    lv_color_t layer_cbuf[LAYER_BAND_WIDTH * LAYER_TEXT_SPACE];
     struct status_state state;
 };
 
