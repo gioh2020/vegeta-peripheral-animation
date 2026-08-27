@@ -11,13 +11,14 @@
 #include <zephyr/kernel.h>
 #include "util.h"
 
-#define LAYER_CANVAS_SIZE 34
+#define LAYER_TEXT_SPACE 24
 
 struct zmk_widget_status {
     sys_snode_t node;
     lv_obj_t *obj;
     lv_color_t cbuf[CANVAS_SIZE * CANVAS_SIZE];
-    lv_color_t layer_cbuf[LAYER_CANVAS_SIZE * LAYER_CANVAS_SIZE];
+    lv_color_t layer_scratch[LAYER_TEXT_SPACE * CANVAS_SIZE];
+    lv_color_t layer_cbuf[CANVAS_SIZE * LAYER_TEXT_SPACE];
     struct status_state state;
 };
 

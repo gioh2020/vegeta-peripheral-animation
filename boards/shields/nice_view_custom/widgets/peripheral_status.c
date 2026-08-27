@@ -104,42 +104,37 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     rotate_canvas(canvas, cbuf);
 }
 
-static void rotate_layer_canvas(lv_obj_t *canvas, lv_color_t cbuf[]) {
-    static lv_color_t cbuf_tmp[LAYER_CANVAS_SIZE * LAYER_CANVAS_SIZE];
-    memcpy(cbuf_tmp, cbuf, sizeof(cbuf_tmp));
-    lv_img_dsc_t img;
-    img.data = (void *)cbuf_tmp;
-    img.header.cf = LV_IMG_CF_TRUE_COLOR;
-    img.header.w = LAYER_CANVAS_SIZE;
-    img.header.h = LAYER_CANVAS_SIZE;
-
-    lv_canvas_fill_bg(canvas, LVGL_BACKGROUND, LV_OPA_COVER);
-    lv_canvas_transform(canvas, &img, 900, LV_IMG_ZOOM_NONE, -1, 0, LAYER_CANVAS_SIZE / 2,
-                        LAYER_CANVAS_SIZE / 2, true);
-}
-
 static void draw_bottom(struct zmk_widget_status *widget, const struct status_state *state) {
-    lv_obj_t *canvas = lv_obj_get_child(widget->obj, 2);
+    lv_obj_t *scratch = lv_obj_get_child(widget->obj, 2);
+    lv_obj_t *canvas = lv_obj_get_child(widget->obj, 3);
 
     lv_draw_rect_dsc_t rect_black_dsc;
     init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
     lv_draw_label_dsc_t label_dsc;
     init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_unscii_8, LV_TEXT_ALIGN_CENTER);
 
-    // Fill background
-    lv_canvas_draw_rect(canvas, 0, 0, LAYER_CANVAS_SIZE, LAYER_CANVAS_SIZE, &rect_black_dsc);
+    // Draw the caption normally into the narrow scratch canvas (never shown on screen)
+    lv_canvas_draw_rect(scratch, 0, 0, LAYER_TEXT_SPACE, CANVAS_SIZE, &rect_black_dsc);
 
-    // Draw active layer name (short form, so it fits on one line in a small corner)
+    // Short form so it fits within LAYER_TEXT_SPACE without clipping
     char text[6] = {};
     if (state->layer_label == NULL) {
         snprintf(text, sizeof(text), "L%d", state->layer_index);
     } else {
         snprintf(text, sizeof(text), "%s", state->layer_label);
     }
-    lv_canvas_draw_text(canvas, 0, 13, LAYER_CANVAS_SIZE, &label_dsc, text);
+    lv_canvas_draw_text(scratch, 0, 30, LAYER_TEXT_SPACE, &label_dsc, text);
 
-    // Rotate canvas
-    rotate_layer_canvas(canvas, widget->layer_cbuf);
+    // Rotate the scratch content into the full-width, short destination canvas
+    lv_img_dsc_t img;
+    img.data = (void *)widget->layer_scratch;
+    img.header.cf = LV_IMG_CF_TRUE_COLOR;
+    img.header.w = LAYER_TEXT_SPACE;
+    img.header.h = CANVAS_SIZE;
+
+    lv_canvas_fill_bg(canvas, LVGL_BACKGROUND, LV_OPA_COVER);
+    lv_canvas_transform(canvas, &img, 900, LV_IMG_ZOOM_NONE, -1, 0, LAYER_TEXT_SPACE / 2,
+                        CANVAS_SIZE / 2, true);
 }
 
 static void set_battery_status(struct zmk_widget_status *widget,
@@ -245,9 +240,14 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     lv_animimg_start(art);
     lv_obj_align(art, LV_ALIGN_TOP_LEFT, 0, 0);
 
+    lv_obj_t *layer_scratch = lv_canvas_create(widget->obj);
+    lv_canvas_set_buffer(layer_scratch, widget->layer_scratch, LAYER_TEXT_SPACE, CANVAS_SIZE,
+                         LV_IMG_CF_TRUE_COLOR);
+    lv_obj_add_flag(layer_scratch, LV_OBJ_FLAG_HIDDEN);
+
     lv_obj_t *bottom = lv_canvas_create(widget->obj);
-    lv_obj_align(bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
-    lv_canvas_set_buffer(bottom, widget->layer_cbuf, LAYER_CANVAS_SIZE, LAYER_CANVAS_SIZE,
+    lv_obj_align(bottom, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_canvas_set_buffer(bottom, widget->layer_cbuf, CANVAS_SIZE, LAYER_TEXT_SPACE,
                          LV_IMG_CF_TRUE_COLOR);
 
     sys_slist_append(&widgets, &widget->node);
