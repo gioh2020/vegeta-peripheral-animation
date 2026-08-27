@@ -54,24 +54,16 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
 
     lv_draw_label_dsc_t label_dsc;
     init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_RIGHT);
-    lv_draw_label_dsc_t label_dsc_small;
-    init_label_dsc(&label_dsc_small, LVGL_FOREGROUND, &lv_font_unscii_8, LV_TEXT_ALIGN_LEFT);
     lv_draw_rect_dsc_t rect_black_dsc;
     init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
 
     // Fill background
     lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_black_dsc);
 
-    // Draw battery icon
-    draw_battery(canvas, state);
-
-    // Battery percentage, under the battery icon
-    char battery_text[5] = {};
-    snprintf(battery_text, sizeof(battery_text), "%d%%", state->battery);
-    lv_canvas_draw_text(canvas, 0, 16, 36, &label_dsc_small, battery_text);
-
-    // Draw output status (USB, or BLE profile connection/pairing state)
-    char output_text[10] = {};
+    // Battery percentage, active BLE profile number, and connection/pairing icon
+    char output_text[16] = {};
+    snprintf(output_text, sizeof(output_text), "%d%%%d", state->battery,
+             state->active_profile_index + 1);
 
     switch (state->selected_endpoint.transport) {
     case ZMK_TRANSPORT_USB:
@@ -91,11 +83,6 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     }
 
     lv_canvas_draw_text(canvas, 0, 0, CANVAS_SIZE, &label_dsc, output_text);
-
-    // Active BLE profile number, under the connection icon
-    char profile_text[3] = {};
-    snprintf(profile_text, sizeof(profile_text), "%d", state->active_profile_index + 1);
-    lv_canvas_draw_text(canvas, 0, 16, CANVAS_SIZE, &label_dsc, profile_text);
 
     // Rotate canvas
     rotate_canvas(canvas, cbuf);
