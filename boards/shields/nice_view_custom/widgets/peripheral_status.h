@@ -11,7 +11,7 @@
 #include <zephyr/kernel.h>
 #include "util.h"
 
-#define LAYER_TEXT_SPACE 40
+#define LAYER_TEXT_SPACE 22
 
 struct zmk_widget_status {
     sys_snode_t node;

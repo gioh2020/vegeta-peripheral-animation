@@ -118,7 +118,7 @@ static void draw_bottom(struct zmk_widget_status *widget, const struct status_st
 
     char text[10] = {};
     if (state->layer_label == NULL) {
-        snprintf(text, sizeof(text), "LAYER %d", state->layer_index);
+        snprintf(text, sizeof(text), "L%d", state->layer_index);
     } else {
         snprintf(text, sizeof(text), "%s", state->layer_label);
     }
