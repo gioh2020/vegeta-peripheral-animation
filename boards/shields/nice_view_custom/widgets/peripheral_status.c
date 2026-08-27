@@ -101,42 +101,28 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     rotate_canvas(canvas, cbuf);
 }
 
-static void rotate_layer_canvas(lv_obj_t *canvas, lv_color_t cbuf[]) {
-    static lv_color_t cbuf_tmp[LAYER_CANVAS_SIZE * LAYER_CANVAS_SIZE];
-    memcpy(cbuf_tmp, cbuf, sizeof(cbuf_tmp));
-    lv_img_dsc_t img;
-    img.data = (void *)cbuf_tmp;
-    img.header.cf = LV_IMG_CF_TRUE_COLOR;
-    img.header.w = LAYER_CANVAS_SIZE;
-    img.header.h = LAYER_CANVAS_SIZE;
-
-    lv_canvas_fill_bg(canvas, LVGL_BACKGROUND, LV_OPA_COVER);
-    lv_canvas_transform(canvas, &img, 900, LV_IMG_ZOOM_NONE, -1, 0, LAYER_CANVAS_SIZE / 2,
-                        LAYER_CANVAS_SIZE / 2, true);
-}
-
 static void draw_bottom(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
     lv_obj_t *canvas = lv_obj_get_child(widget, 2);
 
     lv_draw_rect_dsc_t rect_black_dsc;
     init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
     lv_draw_label_dsc_t label_dsc;
-    init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_unscii_8, LV_TEXT_ALIGN_CENTER);
+    init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_montserrat_8, LV_TEXT_ALIGN_CENTER);
 
     // Fill background
-    lv_canvas_draw_rect(canvas, 0, 0, LAYER_CANVAS_SIZE, LAYER_CANVAS_SIZE, &rect_black_dsc);
+    lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_black_dsc);
 
     // Draw active layer name
     char text[10] = {};
     if (state->layer_label == NULL) {
-        snprintf(text, sizeof(text), "L%d", state->layer_index);
+        snprintf(text, sizeof(text), "LAYER %d", state->layer_index);
     } else {
         snprintf(text, sizeof(text), "%s", state->layer_label);
     }
-    lv_canvas_draw_text(canvas, 0, 13, LAYER_CANVAS_SIZE, &label_dsc, text);
+    lv_canvas_draw_text(canvas, 0, 5, CANVAS_SIZE, &label_dsc, text);
 
     // Rotate canvas
-    rotate_layer_canvas(canvas, cbuf);
+    rotate_canvas(canvas, cbuf);
 }
 
 static void set_battery_status(struct zmk_widget_status *widget,
@@ -244,8 +230,7 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
 
     lv_obj_t *bottom = lv_canvas_create(widget->obj);
     lv_obj_align(bottom, LV_ALIGN_TOP_LEFT, 0, 0);
-    lv_canvas_set_buffer(bottom, widget->layer_cbuf, LAYER_CANVAS_SIZE, LAYER_CANVAS_SIZE,
-                         LV_IMG_CF_TRUE_COLOR);
+    lv_canvas_set_buffer(bottom, widget->layer_cbuf, CANVAS_SIZE, CANVAS_SIZE, LV_IMG_CF_TRUE_COLOR);
 
     sys_slist_append(&widgets, &widget->node);
     widget_battery_status_init();
