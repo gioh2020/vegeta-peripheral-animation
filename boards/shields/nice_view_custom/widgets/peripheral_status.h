@@ -11,7 +11,7 @@
 #include <zephyr/kernel.h>
 #include "util.h"
 
-#define LAYER_CANVAS_SIZE 34
+#define LAYER_CANVAS_SIZE 24
 
 struct zmk_widget_status {
     sys_snode_t node;
