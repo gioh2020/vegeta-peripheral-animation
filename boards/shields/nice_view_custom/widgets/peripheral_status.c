@@ -210,6 +210,9 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     widget->layer_label = lv_label_create(widget->obj);
     lv_obj_set_style_text_font(widget->layer_label, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(widget->layer_label, LVGL_FOREGROUND, 0);
+    lv_obj_set_style_bg_color(widget->layer_label, LVGL_BACKGROUND, 0);
+    lv_obj_set_style_bg_opa(widget->layer_label, LV_OPA_COVER, 0);
+    lv_obj_set_style_pad_hor(widget->layer_label, 3, 0);
     lv_obj_align(widget->layer_label, LV_ALIGN_BOTTOM_MID, 0, 0);
 
     sys_slist_append(&widgets, &widget->node);
