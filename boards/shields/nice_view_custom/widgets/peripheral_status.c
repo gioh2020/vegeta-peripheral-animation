@@ -60,7 +60,7 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     lv_obj_t *canvas = lv_obj_get_child(widget, 0);
 
     lv_draw_label_dsc_t label_dsc;
-    init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_montserrat_14, LV_TEXT_ALIGN_RIGHT);
+    init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_montserrat_12, LV_TEXT_ALIGN_RIGHT);
     lv_draw_label_dsc_t label_dsc_battery;
     init_label_dsc(&label_dsc_battery, LVGL_FOREGROUND, &lv_font_unscii_8, LV_TEXT_ALIGN_LEFT);
     lv_draw_rect_dsc_t rect_black_dsc;
@@ -69,9 +69,9 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     // Fill background
     lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_black_dsc);
 
-    // Active BLE profile number and connection/pairing icon
+    // Active BLE profile number and connection/pairing icon, with a gap between them
     char output_text[8] = {};
-    snprintf(output_text, sizeof(output_text), "%d", state->active_profile_index + 1);
+    snprintf(output_text, sizeof(output_text), "%d ", state->active_profile_index + 1);
 
     switch (state->selected_endpoint.transport) {
     case ZMK_TRANSPORT_USB:
@@ -96,30 +96,6 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     char battery_text[4] = {};
     snprintf(battery_text, sizeof(battery_text), "%d", state->battery);
     lv_canvas_draw_text(canvas, 0, 4, 30, &label_dsc_battery, battery_text);
-
-    // Rotate canvas
-    rotate_canvas(canvas, cbuf);
-}
-
-static void draw_bottom(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
-    lv_obj_t *canvas = lv_obj_get_child(widget, 2);
-
-    lv_draw_rect_dsc_t rect_black_dsc;
-    init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
-    lv_draw_label_dsc_t label_dsc;
-    init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_montserrat_14, LV_TEXT_ALIGN_CENTER);
-
-    // Fill background
-    lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_black_dsc);
-
-    // Draw active layer name
-    char text[12] = {};
-    if (state->layer_label == NULL) {
-        snprintf(text, sizeof(text), "LAYER %d", state->layer_index);
-    } else {
-        snprintf(text, sizeof(text), "%s", state->layer_label);
-    }
-    lv_canvas_draw_text(canvas, 0, 5, CANVAS_SIZE, &label_dsc, text);
 
     // Rotate canvas
     rotate_canvas(canvas, cbuf);
@@ -194,10 +170,13 @@ ZMK_SUBSCRIPTION(widget_output_status, zmk_ble_active_profile_changed);
 #endif
 
 static void set_layer_status(struct zmk_widget_status *widget, struct layer_status_state state) {
-    widget->state.layer_index = state.index;
-    widget->state.layer_label = state.label;
-
-    draw_bottom(widget->obj, widget->cbuf2, &widget->state);
+    char text[12] = {};
+    if (state.label == NULL) {
+        snprintf(text, sizeof(text), "LAYER %d", state.index);
+    } else {
+        snprintf(text, sizeof(text), "%s", state.label);
+    }
+    lv_label_set_text(widget->layer_label, text);
 }
 
 static void layer_status_update_cb(struct layer_status_state state) {
@@ -228,9 +207,10 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     lv_animimg_start(art);
     lv_obj_align(art, LV_ALIGN_TOP_LEFT, 0, 0);
 
-    lv_obj_t *bottom = lv_canvas_create(widget->obj);
-    lv_obj_align(bottom, LV_ALIGN_TOP_LEFT, 0, 0);
-    lv_canvas_set_buffer(bottom, widget->cbuf2, CANVAS_SIZE, CANVAS_SIZE, LV_IMG_CF_TRUE_COLOR);
+    widget->layer_label = lv_label_create(widget->obj);
+    lv_obj_set_style_text_font(widget->layer_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(widget->layer_label, LVGL_FOREGROUND, 0);
+    lv_obj_align(widget->layer_label, LV_ALIGN_BOTTOM_MID, 0, 0);
 
     sys_slist_append(&widgets, &widget->node);
     widget_battery_status_init();
