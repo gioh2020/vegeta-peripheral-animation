@@ -18,11 +18,15 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/events/battery_state_changed.h>
 #include <zmk/events/ble_active_profile_changed.h>
 #include <zmk/events/endpoint_changed.h>
+#include <zmk/events/layer_state_changed.h>
 #include <zmk/usb.h>
 #include <zmk/ble.h>
 #include <zmk/endpoints.h>
+#include <zmk/keymap.h>
 
 #include "peripheral_status.h"
+
+LV_FONT_DECLARE(lv_font_silkscreen_13);
 
 LV_IMG_DECLARE(vegeta01);
 LV_IMG_DECLARE(vegeta02);
@@ -49,13 +53,18 @@ struct output_status_state {
     bool active_profile_bonded;
 };
 
+struct layer_status_state {
+    uint8_t index;
+    const char *label;
+};
+
 static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
     lv_obj_t *canvas = lv_obj_get_child(widget, 0);
 
     lv_draw_label_dsc_t label_dsc;
     init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_montserrat_12, LV_TEXT_ALIGN_RIGHT);
     lv_draw_label_dsc_t label_dsc_battery;
-    init_label_dsc(&label_dsc_battery, LVGL_FOREGROUND, &lv_font_unscii_8, LV_TEXT_ALIGN_LEFT);
+    init_label_dsc(&label_dsc_battery, LVGL_FOREGROUND, &lv_font_silkscreen_13, LV_TEXT_ALIGN_LEFT);
     lv_draw_rect_dsc_t rect_black_dsc;
     init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
 
@@ -92,6 +101,38 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     char profile_text[3] = {};
     snprintf(profile_text, sizeof(profile_text), "%d", state->active_profile_index + 1);
     lv_canvas_draw_text(canvas, 36, 4, 16, &label_dsc_battery, profile_text);
+
+    // Rotate canvas
+    rotate_canvas(canvas, cbuf);
+}
+
+static void draw_bottom(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
+    lv_obj_t *canvas = lv_obj_get_child(widget, 1);
+
+    lv_draw_label_dsc_t label_dsc;
+    init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_silkscreen_13, LV_TEXT_ALIGN_CENTER);
+    lv_draw_rect_dsc_t rect_black_dsc;
+    init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
+
+    // Fill background
+    lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_black_dsc);
+
+    // Active layer name, or "LAYER N" if the layer has no display-name
+    // zmk_keymap_layer_name() returns "" (not NULL) when a layer has no label/display-name
+    //
+    // Note the y offset here (52, not 5 like draw_top's text): this canvas is anchored at the
+    // OPPOSITE corner from the top canvas (TOP_LEFT vs TOP_RIGHT), but rotate_canvas() applies
+    // the identical 90 degree transform to both. Content drawn near y=0 rotates toward the edge
+    // that faces the gif (which paints over it) on this canvas, instead of the outer safe edge
+    // like it does on the top canvas. Drawing near the opposite edge (y close to CANVAS_SIZE)
+    // sends it to the safe edge here instead.
+    if (state->layer_label == NULL || state->layer_label[0] == '\0') {
+        char text[10] = {};
+        sprintf(text, "LAYER %i", state->layer_index);
+        lv_canvas_draw_text(canvas, 0, 52, CANVAS_SIZE, &label_dsc, text);
+    } else {
+        lv_canvas_draw_text(canvas, 0, 52, CANVAS_SIZE, &label_dsc, state->layer_label);
+    }
 
     // Rotate canvas
     rotate_canvas(canvas, cbuf);
@@ -165,6 +206,28 @@ ZMK_SUBSCRIPTION(widget_output_status, zmk_usb_conn_state_changed);
 ZMK_SUBSCRIPTION(widget_output_status, zmk_ble_active_profile_changed);
 #endif
 
+static void set_layer_status(struct zmk_widget_status *widget, struct layer_status_state state) {
+    widget->state.layer_index = state.index;
+    widget->state.layer_label = state.label;
+
+    draw_bottom(widget->obj, widget->cbuf2, &widget->state);
+}
+
+static void layer_status_update_cb(struct layer_status_state state) {
+    struct zmk_widget_status *widget;
+    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) { set_layer_status(widget, state); }
+}
+
+static struct layer_status_state layer_status_get_state(const zmk_event_t *eh) {
+    uint8_t index = zmk_keymap_highest_layer_active();
+    return (struct layer_status_state){.index = index, .label = zmk_keymap_layer_name(index)};
+}
+
+ZMK_DISPLAY_WIDGET_LISTENER(widget_layer_status, struct layer_status_state, layer_status_update_cb,
+                            layer_status_get_state)
+
+ZMK_SUBSCRIPTION(widget_layer_status, zmk_layer_state_changed);
+
 int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     widget->obj = lv_obj_create(parent);
     lv_obj_set_size(widget->obj, 160, 68);
@@ -172,16 +235,21 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     lv_obj_align(top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_canvas_set_buffer(top, widget->cbuf, CANVAS_SIZE, CANVAS_SIZE, LV_IMG_CF_TRUE_COLOR);
 
+    lv_obj_t *bottom = lv_canvas_create(widget->obj);
+    lv_obj_align(bottom, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_canvas_set_buffer(bottom, widget->cbuf2, CANVAS_SIZE, CANVAS_SIZE, LV_IMG_CF_TRUE_COLOR);
+
     lv_obj_t * art = lv_animimg_create(widget->obj);
     lv_animimg_set_src(art, (const void **) anim_imgs, 10);
     lv_animimg_set_duration(art, 1000);
     lv_animimg_set_repeat_count(art, LV_ANIM_REPEAT_INFINITE);
     lv_animimg_start(art);
-    lv_obj_align(art, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_align(art, LV_ALIGN_TOP_LEFT, 20, 0);
 
     sys_slist_append(&widgets, &widget->node);
     widget_battery_status_init();
     widget_output_status_init();
+    widget_layer_status_init();
 
     return 0;
 }
