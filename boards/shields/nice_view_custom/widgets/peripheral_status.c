@@ -139,7 +139,7 @@ static void draw_bottom(struct zmk_widget_status *widget, const struct status_st
     lv_canvas_draw_text(canvas, 0, 8, LAYER_CANVAS_SIZE, &label_dsc, text);
 
     // Rotate canvas
-    rotate_layer_canvas(canvas, cbuf);
+    rotate_layer_canvas(canvas, widget->layer_cbuf);
 }
 
 static void set_battery_status(struct zmk_widget_status *widget,
