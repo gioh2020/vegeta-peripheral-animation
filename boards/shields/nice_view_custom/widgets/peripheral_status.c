@@ -69,33 +69,36 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     // Fill background
     lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_black_dsc);
 
-    // Active BLE profile number and connection/pairing icon, with a gap between them
-    char output_text[8] = {};
-    snprintf(output_text, sizeof(output_text), "%d ", state->active_profile_index + 1);
-
+    // Connection/pairing icon
+    char icon_text[6] = {};
     switch (state->selected_endpoint.transport) {
     case ZMK_TRANSPORT_USB:
-        strcat(output_text, LV_SYMBOL_USB);
+        strcat(icon_text, LV_SYMBOL_USB);
         break;
     case ZMK_TRANSPORT_BLE:
         if (state->active_profile_bonded) {
             if (state->active_profile_connected) {
-                strcat(output_text, LV_SYMBOL_WIFI);
+                strcat(icon_text, LV_SYMBOL_WIFI);
             } else {
-                strcat(output_text, LV_SYMBOL_CLOSE);
+                strcat(icon_text, LV_SYMBOL_CLOSE);
             }
         } else {
-            strcat(output_text, LV_SYMBOL_SETTINGS);
+            strcat(icon_text, LV_SYMBOL_SETTINGS);
         }
         break;
     }
 
-    lv_canvas_draw_text(canvas, 0, 0, CANVAS_SIZE, &label_dsc, output_text);
+    lv_canvas_draw_text(canvas, 0, 0, CANVAS_SIZE, &label_dsc, icon_text);
 
-    // Battery percentage (no % sign), smaller font, with a gap before the profile number
+    // Battery percentage (no % sign)
     char battery_text[4] = {};
     snprintf(battery_text, sizeof(battery_text), "%d", state->battery);
     lv_canvas_draw_text(canvas, 0, 4, 30, &label_dsc_battery, battery_text);
+
+    // Active BLE profile number, same size/font as the battery number
+    char profile_text[3] = {};
+    snprintf(profile_text, sizeof(profile_text), "%d", state->active_profile_index + 1);
+    lv_canvas_draw_text(canvas, 36, 4, 16, &label_dsc_battery, profile_text);
 
     // Rotate canvas
     rotate_canvas(canvas, cbuf);
@@ -226,6 +229,7 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     lv_animimg_set_duration(art, 1000);
     lv_animimg_set_repeat_count(art, LV_ANIM_REPEAT_INFINITE);
     lv_animimg_start(art);
+    lv_img_set_zoom(art, 218);
     lv_obj_align(art, LV_ALIGN_TOP_LEFT, 0, 0);
 
     lv_obj_t *bottom = lv_canvas_create(widget->obj);
