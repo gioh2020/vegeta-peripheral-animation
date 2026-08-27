@@ -229,7 +229,6 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     lv_animimg_set_duration(art, 1000);
     lv_animimg_set_repeat_count(art, LV_ANIM_REPEAT_INFINITE);
     lv_animimg_start(art);
-    lv_img_set_zoom(art, 218);
     lv_obj_align(art, LV_ALIGN_TOP_LEFT, 0, 0);
 
     lv_obj_t *bottom = lv_canvas_create(widget->obj);
