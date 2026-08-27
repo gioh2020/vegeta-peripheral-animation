@@ -136,7 +136,7 @@ static void draw_bottom(struct zmk_widget_status *widget, const struct status_st
     } else {
         snprintf(text, sizeof(text), "%s", state->layer_label);
     }
-    lv_canvas_draw_text(canvas, 0, 8, LAYER_CANVAS_SIZE, &label_dsc, text);
+    lv_canvas_draw_text(canvas, 0, 13, LAYER_CANVAS_SIZE, &label_dsc, text);
 
     // Rotate canvas
     rotate_layer_canvas(canvas, widget->layer_cbuf);
