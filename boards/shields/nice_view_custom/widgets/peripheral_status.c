@@ -61,15 +61,20 @@ struct layer_status_state {
 static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
     lv_obj_t *canvas = lv_obj_get_child(widget, 0);
 
+    // Hardcoded black-on-white for this corner, independent of
+    // CONFIG_NICE_VIEW_WIDGET_INVERTED, so the Vegeta art stays white-on-black
+    // while just the status row reads as a light caption strip.
     lv_draw_label_dsc_t label_dsc;
-    init_label_dsc(&label_dsc, LVGL_FOREGROUND, &lv_font_montserrat_12, LV_TEXT_ALIGN_RIGHT);
+    init_label_dsc(&label_dsc, lv_color_black(), &lv_font_montserrat_12, LV_TEXT_ALIGN_RIGHT);
     lv_draw_label_dsc_t label_dsc_battery;
-    init_label_dsc(&label_dsc_battery, LVGL_FOREGROUND, &lv_font_silkscreen_13, LV_TEXT_ALIGN_LEFT);
-    lv_draw_rect_dsc_t rect_black_dsc;
-    init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
+    init_label_dsc(&label_dsc_battery, lv_color_black(), &lv_font_silkscreen_13, LV_TEXT_ALIGN_LEFT);
+    lv_draw_rect_dsc_t rect_white_dsc;
+    init_rect_dsc(&rect_white_dsc, lv_color_white());
+    lv_draw_arc_dsc_t arc_dsc;
+    init_arc_dsc(&arc_dsc, lv_color_black(), 2);
 
     // Fill background
-    lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_black_dsc);
+    lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_white_dsc);
 
     // Connection/pairing icon
     char icon_text[6] = {};
@@ -90,17 +95,18 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
         break;
     }
 
-    lv_canvas_draw_text(canvas, 0, 0, CANVAS_SIZE, &label_dsc, icon_text);
+    lv_canvas_draw_text(canvas, 0, -4, CANVAS_SIZE, &label_dsc, icon_text);
 
     // Battery percentage (no % sign)
     char battery_text[4] = {};
     snprintf(battery_text, sizeof(battery_text), "%d", state->battery);
-    lv_canvas_draw_text(canvas, 0, 4, 30, &label_dsc_battery, battery_text);
+    lv_canvas_draw_text(canvas, 0, 0, 30, &label_dsc_battery, battery_text);
 
-    // Active BLE profile number, same size/font as the battery number
+    // Active BLE profile number, circled, same size/font as the battery number
     char profile_text[3] = {};
     snprintf(profile_text, sizeof(profile_text), "%d", state->active_profile_index + 1);
-    lv_canvas_draw_text(canvas, 36, 4, 16, &label_dsc_battery, profile_text);
+    lv_canvas_draw_arc(canvas, 41, 6, 9, 0, 360, &arc_dsc);
+    lv_canvas_draw_text(canvas, 36, 0, 16, &label_dsc_battery, profile_text);
 
     // Rotate canvas
     rotate_canvas(canvas, cbuf);
