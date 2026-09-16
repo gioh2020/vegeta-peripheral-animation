@@ -28,6 +28,8 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 LV_FONT_DECLARE(lv_font_silkscreen_13);
 
+LV_IMG_DECLARE(bolt);
+
 LV_IMG_DECLARE(vegeta01);
 LV_IMG_DECLARE(vegeta02);
 LV_IMG_DECLARE(vegeta03);
@@ -72,14 +74,16 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     // white" here means passing lv_color_black(), and vice versa.
     lv_draw_label_dsc_t label_dsc;
     init_label_dsc(&label_dsc, lv_color_white(), &lv_font_montserrat_12, LV_TEXT_ALIGN_RIGHT);
-    lv_draw_label_dsc_t label_dsc_battery;
-    init_label_dsc(&label_dsc_battery, lv_color_white(), &lv_font_silkscreen_13, LV_TEXT_ALIGN_LEFT);
     lv_draw_label_dsc_t label_dsc_profile;
     init_label_dsc(&label_dsc_profile, lv_color_white(), &lv_font_silkscreen_13, LV_TEXT_ALIGN_CENTER);
     lv_draw_rect_dsc_t rect_white_dsc;
     init_rect_dsc(&rect_white_dsc, lv_color_black());
-    lv_draw_arc_dsc_t arc_dsc;
-    init_arc_dsc(&arc_dsc, lv_color_white(), 2);
+    // Battery icon ink/gap - swapped for the same reason as above, so the
+    // outline/fill actually reads as black lines on this white corner.
+    lv_draw_rect_dsc_t rect_batt_ink;
+    init_rect_dsc(&rect_batt_ink, lv_color_white());
+    lv_draw_rect_dsc_t rect_batt_gap;
+    init_rect_dsc(&rect_batt_gap, lv_color_black());
 
     // Fill background
     lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_white_dsc);
@@ -105,15 +109,22 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
 
     lv_canvas_draw_text(canvas, 0, 0, CANVAS_SIZE, &label_dsc, icon_text);
 
-    // Battery percentage (no % sign)
-    char battery_text[4] = {};
-    snprintf(battery_text, sizeof(battery_text), "%d", state->battery);
-    lv_canvas_draw_text(canvas, 0, 0, 30, &label_dsc_battery, battery_text);
+    // Battery icon (outline + level fill), same geometry as util.c's shared
+    // draw_battery() but with locally-swapped colors for this white corner
+    lv_canvas_draw_rect(canvas, 0, 2, 29, 12, &rect_batt_ink);
+    lv_canvas_draw_rect(canvas, 1, 3, 27, 10, &rect_batt_gap);
+    lv_canvas_draw_rect(canvas, 2, 4, (state->battery + 2) / 4, 8, &rect_batt_ink);
+    lv_canvas_draw_rect(canvas, 30, 5, 3, 6, &rect_batt_ink);
+    lv_canvas_draw_rect(canvas, 31, 6, 1, 4, &rect_batt_gap);
+    if (state->charging) {
+        lv_draw_img_dsc_t img_dsc;
+        lv_draw_img_dsc_init(&img_dsc);
+        lv_canvas_draw_img(canvas, 9, 1, &bolt, &img_dsc);
+    }
 
-    // Active BLE profile number, circled, same size/font as the battery number
+    // Active BLE profile number, same size/font as before, no circle
     char profile_text[3] = {};
     snprintf(profile_text, sizeof(profile_text), "%d", state->active_profile_index + 1);
-    lv_canvas_draw_arc(canvas, 44, 6, 10, 0, 360, &arc_dsc);
     lv_canvas_draw_text(canvas, 34, 0, 20, &label_dsc_profile, profile_text);
 
     // Rotate canvas
