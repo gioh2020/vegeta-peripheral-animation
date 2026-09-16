@@ -64,14 +64,22 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     // Hardcoded black-on-white for this corner, independent of
     // CONFIG_NICE_VIEW_WIDGET_INVERTED, so the Vegeta art stays white-on-black
     // while just the status row reads as a light caption strip.
+    //
+    // On this panel lv_color_*() renders opposite of what you'd expect for a
+    // canvas (confirmed on hardware: LVGL_BACKGROUND/LVGL_FOREGROUND, which
+    // are lv_color_white()/lv_color_black() in non-inverted mode, is what the
+    // *original* white-icon-on-black code already used) - so "visually
+    // white" here means passing lv_color_black(), and vice versa.
     lv_draw_label_dsc_t label_dsc;
-    init_label_dsc(&label_dsc, lv_color_black(), &lv_font_montserrat_12, LV_TEXT_ALIGN_RIGHT);
+    init_label_dsc(&label_dsc, lv_color_white(), &lv_font_montserrat_12, LV_TEXT_ALIGN_RIGHT);
     lv_draw_label_dsc_t label_dsc_battery;
-    init_label_dsc(&label_dsc_battery, lv_color_black(), &lv_font_silkscreen_13, LV_TEXT_ALIGN_LEFT);
+    init_label_dsc(&label_dsc_battery, lv_color_white(), &lv_font_silkscreen_13, LV_TEXT_ALIGN_LEFT);
+    lv_draw_label_dsc_t label_dsc_profile;
+    init_label_dsc(&label_dsc_profile, lv_color_white(), &lv_font_silkscreen_13, LV_TEXT_ALIGN_CENTER);
     lv_draw_rect_dsc_t rect_white_dsc;
-    init_rect_dsc(&rect_white_dsc, lv_color_white());
+    init_rect_dsc(&rect_white_dsc, lv_color_black());
     lv_draw_arc_dsc_t arc_dsc;
-    init_arc_dsc(&arc_dsc, lv_color_black(), 2);
+    init_arc_dsc(&arc_dsc, lv_color_white(), 2);
 
     // Fill background
     lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_white_dsc);
@@ -95,7 +103,7 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
         break;
     }
 
-    lv_canvas_draw_text(canvas, 0, -4, CANVAS_SIZE, &label_dsc, icon_text);
+    lv_canvas_draw_text(canvas, 0, 0, CANVAS_SIZE, &label_dsc, icon_text);
 
     // Battery percentage (no % sign)
     char battery_text[4] = {};
@@ -105,8 +113,8 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     // Active BLE profile number, circled, same size/font as the battery number
     char profile_text[3] = {};
     snprintf(profile_text, sizeof(profile_text), "%d", state->active_profile_index + 1);
-    lv_canvas_draw_arc(canvas, 41, 6, 9, 0, 360, &arc_dsc);
-    lv_canvas_draw_text(canvas, 36, 0, 16, &label_dsc_battery, profile_text);
+    lv_canvas_draw_arc(canvas, 44, 6, 10, 0, 360, &arc_dsc);
+    lv_canvas_draw_text(canvas, 34, 0, 20, &label_dsc_profile, profile_text);
 
     // Rotate canvas
     rotate_canvas(canvas, cbuf);
